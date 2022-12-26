@@ -1,31 +1,21 @@
-#if UNITY_EDITOR
-
+using System.Collections;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[InitializeOnLoad]
-public class EditorGamepad
+
+public class EditorGamepadGO : MonoBehaviour
 {
-    static Transform selection;
-    static GameObject editorGamepadForward;
-
-    static EditorGamepad()
-        => EditorApplication.update += Update;
-
-    
-
-    static void Update()
+    // Start is called before the first frame update
+    void Start()
     {
-        if (editorGamepadForward == null)
-        {
-            editorGamepadForward = GameObject.Find("EditorGamepadForward");
-            if (editorGamepadForward == null)
-            {
-                return;
-            }
-        }
+        
+    }
 
+    // Update is called once per frame
+    void Update()
+    {
         var gamepad = Gamepad.current;
 
         if (gamepad == null) return;
@@ -42,14 +32,11 @@ public class EditorGamepad
                 //Selection.activeGameObject.transform.rotation *= rotation;
                 Selection.activeGameObject.transform.Rotate(new Vector3(-leftStick.y, rightStick.y, leftStick.x), speed, Space.Self);
                 //SceneView.lastActiveSceneView.pivot += new Vector3(leftStick.x, rightStick.y, leftStick.y) * speed;
-                editorGamepadForward.transform.position = Selection.activeGameObject.transform.position + Selection.activeGameObject.transform.forward * 0.1f;
-                editorGamepadForward.transform.forward = Selection.activeGameObject.transform.forward;
-                editorGamepadForward.transform.up = Selection.activeGameObject.transform.up;
+                Gizmos.DrawCube(Vector3.zero, Vector3.one);
+
             }
             //Debug.Log(gamepad.leftStick.ReadValue()); 
 
         }
     }
 }
-
-#endif
