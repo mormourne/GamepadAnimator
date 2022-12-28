@@ -18,7 +18,7 @@ public class EditorGamepad
 
     const float selectionSpeed = 0.005f;
     const float selectionRotationSpeed = 0.5f;
-    const float cameraSpeed = 0.005f;
+    const float cameraSpeed = 0.05f;
     const float cameraRotationSpeed = 0.5f;
     const float leftStickDeadzone = 0.25f;
     const float rightStickDeadzone = 0.25f;
@@ -72,7 +72,6 @@ public class EditorGamepad
 
     private static void ChangeSelectionFromHierarchy() 
     {
-        Debug.Log(Time.deltaTime);
         if (gamepad.buttonNorth.isPressed && CheckChangeSelectionCooldown())
         {
             Transform selectionParent = selection.transform.parent;
@@ -151,8 +150,12 @@ public class EditorGamepad
         SceneView scene = SceneView.lastActiveSceneView;
         Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
 
-        scene.pivot += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
-        scene.rotation *= Quaternion.Euler(0f, rightStick.x * cameraRotationSpeed, 0f);
+        float distance = Mathf.Clamp(scene.cameraDistance - leftStick.y * cameraSpeed, 0f, 1000f);
+        Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, -rightStick.x * cameraRotationSpeed);
+        Debug.Log(scene.cameraDistance + " " + distance);
+        scene.LookAt(scene.pivot, distance, rotation);
+        //scene.pivot += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
+        //scene.rotation *= Quaternion.Euler(0f, rightStick.x * cameraRotationSpeed, 0f);
 
         
         //editorCamera.position += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
