@@ -50,7 +50,8 @@ public class EditorGamepad
                     OnSelectionChanged();
                 }
 
-                if (gamepad.rightTrigger.isPressed)
+                //if (gamepad.rightTrigger.isPressed)
+                if (CheckRightTrigger())
                 {
                     RotateSelection();
                 }
@@ -67,6 +68,31 @@ public class EditorGamepad
             }
             
 
+        }
+    }
+
+    private static bool isRightTriggerPressed = false;
+    private static Vector3 rotationAxis;
+    private static Quaternion selectionStartRotation;
+    private static bool CheckRightTrigger()
+    {
+        if (gamepad.rightTrigger.isPressed)
+        {
+            if (!isRightTriggerPressed)
+            {
+                isRightTriggerPressed = true;
+                rotationAxis = SceneView.lastActiveSceneView.camera.transform.forward;
+                selectionStartRotation = selection.transform.rotation;
+            }
+            return true;
+        }
+        else
+        {
+            if (isRightTriggerPressed)
+            {
+                isRightTriggerPressed = false;
+            }
+            return false;
         }
     }
 
@@ -125,7 +151,7 @@ public class EditorGamepad
         SceneView.lastActiveSceneView.pivot = selection.transform.position;
     }
 
-    private static void RotateSelection()
+    /*private static void RotateSelection()
     {
         GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
 
@@ -140,6 +166,16 @@ public class EditorGamepad
         editorGamepadUp.transform.RotateAround(Selection.activeGameObject.transform.position, Selection.activeGameObject.transform.forward, rightStick.x * selectionRotationSpeed);
 
         Selection.activeGameObject.transform.LookAt(editorGamepadForward.transform, (editorGamepadUp.transform.position - Selection.activeGameObject.transform.position));
+    }*/
+
+    private static void RotateSelection()
+    {
+        GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
+
+        //Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
+        float degrees = -Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg + 90f;
+        Debug.Log(degrees);
+        selection.transform.rotation = selectionStartRotation * Quaternion.AngleAxis(degrees, rotationAxis);
     }
 
     private static void RotateCamera()
