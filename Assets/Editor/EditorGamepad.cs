@@ -16,8 +16,10 @@ public class EditorGamepad
     static GameObject selection;
     static GameObject selectionRoot;
 
-    const float speed = 0.005f;
-    const float rotationSpeed = 0.5f;
+    const float selectionSpeed = 0.005f;
+    const float selectionRotationSpeed = 0.5f;
+    const float cameraSpeed = 0.005f;
+    const float cameraRotationSpeed = 0.5f;
     const float leftStickDeadzone = 0.25f;
     const float rightStickDeadzone = 0.25f;
 
@@ -52,6 +54,10 @@ public class EditorGamepad
                 {
                     RotateSelection();
                 }
+                else if (gamepad.leftTrigger.isPressed)
+                {
+                    RotateCamera();
+                }
                 else if (gamepad.rightShoulder.isPressed)
                 {
                     ChangeSelectionFromHierarchy();
@@ -64,7 +70,7 @@ public class EditorGamepad
         }
     }
 
-    private static void ChangeSelectionFromHierarchy() //TODO add timer for cd
+    private static void ChangeSelectionFromHierarchy() 
     {
         Debug.Log(Time.deltaTime);
         if (gamepad.buttonNorth.isPressed && CheckChangeSelectionCooldown())
@@ -75,7 +81,7 @@ public class EditorGamepad
                 Selection.activeGameObject = selectionParent.gameObject;
             }
         }
-        else if (gamepad.buttonEast.isPressed && selection.transform.childCount > 0 && CheckChangeSelectionCooldown())
+        else if (gamepad.buttonSouth.isPressed && selection.transform.childCount > 0 && CheckChangeSelectionCooldown())
         {
             Transform selectionFirstChild = selection.transform.GetChild(0);
             Selection.activeGameObject = selectionFirstChild.gameObject;
@@ -83,8 +89,8 @@ public class EditorGamepad
         else
         {
             bool west = gamepad.buttonWest.isPressed;
-            bool south = gamepad.buttonSouth.isPressed;
-            if (!south && !west)
+            bool east = gamepad.buttonEast.isPressed;
+            if (!east && !west)
             {
                 return;
             }
@@ -116,24 +122,51 @@ public class EditorGamepad
         editorGamepadRoot.transform.position = selection.transform.position;
         editorGamepadForward.transform.position = selection.transform.position + selection.transform.forward * 0.25f;
         editorGamepadUp.transform.position = selection.transform.position + selection.transform.up * 0.25f;
+
+        SceneView.lastActiveSceneView.pivot = selection.transform.position;
     }
 
     private static void RotateSelection()
     {
-        Vector2 leftStick = gamepad.leftStick.ReadValue();
-        Vector2 rightStick = gamepad.rightStick.ReadValue();
-        leftStick = new Vector2(Mathf.Abs(leftStick.x) > leftStickDeadzone ? leftStick.x : 0f, Mathf.Abs(leftStick.y) > leftStickDeadzone ? leftStick.y : 0f);
-        rightStick = new Vector2(Mathf.Abs(rightStick.x) > rightStickDeadzone ? rightStick.x : 0f, Mathf.Abs(rightStick.y) > rightStickDeadzone ? rightStick.y : 0f);
-
+        GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
 
         Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
+
         editorGamepadForward.transform.position += (Vector3.ProjectOnPlane(editorCamera.TransformDirection(Vector3.right), Vector3.up) * leftStick.x
             + Vector3.ProjectOnPlane(editorCamera.TransformDirection(Vector3.forward), Vector3.up) * leftStick.y
-            + Vector3.up * rightStick.y) * speed;
+            + Vector3.up * rightStick.y) * selectionSpeed;
+
         editorGamepadRoot.transform.position = Selection.activeGameObject.transform.position;
         editorGamepadUp.transform.position = editorGamepadRoot.transform.position + Selection.activeGameObject.transform.up * 0.25f;
-        editorGamepadUp.transform.RotateAround(Selection.activeGameObject.transform.position, Selection.activeGameObject.transform.forward, rightStick.x * rotationSpeed);
+        editorGamepadUp.transform.RotateAround(Selection.activeGameObject.transform.position, Selection.activeGameObject.transform.forward, rightStick.x * selectionRotationSpeed);
+
         Selection.activeGameObject.transform.LookAt(editorGamepadForward.transform, (editorGamepadUp.transform.position - Selection.activeGameObject.transform.position));
+    }
+
+    private static void RotateCamera()
+    {
+        GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
+        
+
+        SceneView scene = SceneView.lastActiveSceneView;
+        Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
+
+        scene.pivot += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
+        scene.rotation *= Quaternion.Euler(0f, rightStick.x * cameraRotationSpeed, 0f);
+
+        
+        //editorCamera.position += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
+        //scene.rotation *= Quaternion.Euler((editorCamera.right * rightStick.y + editorCamera.up * rightStick.x) * cameraRotationSpeed);
+        //editorCamera.rotation *= Quaternion.Euler((editorCamera.right * rightStick.y + editorCamera.up * rightStick.x) * cameraRotationSpeed);
+
+    }
+
+    private static void GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick)
+    {
+        leftStick = gamepad.leftStick.ReadValue();
+        rightStick = gamepad.rightStick.ReadValue();
+        leftStick = new Vector2(Mathf.Abs(leftStick.x) > leftStickDeadzone ? leftStick.x : 0f, Mathf.Abs(leftStick.y) > leftStickDeadzone ? leftStick.y : 0f);
+        rightStick = new Vector2(Mathf.Abs(rightStick.x) > rightStickDeadzone ? rightStick.x : 0f, Mathf.Abs(rightStick.y) > rightStickDeadzone ? rightStick.y : 0f);
     }
 
     private static bool InitGizmos() //TODO instantiate instead of looking in scene
