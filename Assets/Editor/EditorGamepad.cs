@@ -9,9 +9,7 @@ public class EditorGamepad
 {
     static Gamepad gamepad;
 
-    static GameObject editorGamepadForward;
-    static GameObject editorGamepadUp;
-    static GameObject editorGamepadRoot;
+   
 
     static GameObject selection;
     static GameObject selectionRoot;
@@ -33,11 +31,6 @@ public class EditorGamepad
 
     static void Update()
     {
-        if (!InitGizmos())
-        {
-            return;
-        }
-
         gamepad = Gamepad.current;
         if (gamepad == null) return;
 
@@ -55,7 +48,7 @@ public class EditorGamepad
                 {
                     RotateSelection();
                 }
-                else if (gamepad.leftTrigger.isPressed)
+                else if (CheckLeftTrigger())
                 {
                     RotateCamera();
                 }
@@ -63,16 +56,17 @@ public class EditorGamepad
                 {
                     ChangeSelectionFromHierarchy();
                 }
-                
-                
+
+
             }
-            
+
 
         }
     }
 
     private static bool isRightTriggerPressed = false;
-    private static Vector3 rotationAxis;
+    private static Vector3 rotationAxisForward;
+    private static Vector3 rotationAxisRight;
     private static Quaternion selectionStartRotation;
     private static bool CheckRightTrigger()
     {
@@ -82,8 +76,9 @@ public class EditorGamepad
             {
                 isRightTriggerPressed = true;
                 //rotationAxis = SceneView.lastActiveSceneView.camera.transform.forward;
-                rotationAxis = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.forward);
-                Debug.Log(rotationAxis);
+                rotationAxisForward = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.forward);
+                rotationAxisRight = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.right);
+                Debug.Log(rotationAxisForward);
                 selectionStartRotation = selection.transform.rotation;
             }
             return true;
@@ -97,6 +92,38 @@ public class EditorGamepad
             return false;
         }
     }
+
+
+    private static bool isLeftTriggerPressed = false;
+    private static Vector3 cameraAxisUp;
+    private static Vector3 cameraAxisRight;
+    private static Quaternion cameraStartRotation;
+
+    private static bool CheckLeftTrigger()
+    {
+        if (gamepad.leftTrigger.isPressed)
+        {
+            if (!isLeftTriggerPressed)
+            {
+                isLeftTriggerPressed = true;
+                cameraAxisUp = Vector3.up;
+                cameraAxisRight = SceneView.lastActiveSceneView.camera.transform.right;
+                cameraStartRotation = SceneView.lastActiveSceneView.camera.transform.rotation;
+            }
+            return true;
+        }
+        else
+        {
+            if (isLeftTriggerPressed)
+            {
+                isLeftTriggerPressed = false;
+            }
+            return false;
+        }
+    }
+
+
+
 
     private static void ChangeSelectionFromHierarchy() 
     {
@@ -146,68 +173,67 @@ public class EditorGamepad
     {
         selection = Selection.activeGameObject;
         selectionRoot = selection.transform.root.gameObject;
-        editorGamepadRoot.transform.position = selection.transform.position;
-        editorGamepadForward.transform.position = selection.transform.position + selection.transform.forward * 0.25f;
-        editorGamepadUp.transform.position = selection.transform.position + selection.transform.up * 0.25f;
+        
 
         SceneView.lastActiveSceneView.pivot = selection.transform.position;
     }
 
-    /*private static void RotateSelection()
-    {
-        GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
-
-        Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
-
-        editorGamepadForward.transform.position += (Vector3.ProjectOnPlane(editorCamera.TransformDirection(Vector3.right), Vector3.up) * leftStick.x
-            + Vector3.ProjectOnPlane(editorCamera.TransformDirection(Vector3.forward), Vector3.up) * leftStick.y
-            + Vector3.up * rightStick.y) * selectionSpeed;
-
-        editorGamepadRoot.transform.position = Selection.activeGameObject.transform.position;
-        editorGamepadUp.transform.position = editorGamepadRoot.transform.position + Selection.activeGameObject.transform.up * 0.25f;
-        editorGamepadUp.transform.RotateAround(Selection.activeGameObject.transform.position, Selection.activeGameObject.transform.forward, rightStick.x * selectionRotationSpeed);
-
-        Selection.activeGameObject.transform.LookAt(editorGamepadForward.transform, (editorGamepadUp.transform.position - Selection.activeGameObject.transform.position));
-    }*/
+    
 
     private static void RotateSelection()
     {
         GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
 
-        //Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
-        float degrees = Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg - 90f;
-        //Debug.Log(degrees);
-        selection.transform.rotation = selectionStartRotation * Quaternion.AngleAxis(degrees, rotationAxis);
+        float leftDegrees = Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg;
+        float rightDegrees = Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg;
+        //Debug.Log(leftDegrees + " " + rightDegrees);
+        selection.transform.rotation = selectionStartRotation * Quaternion.AngleAxis(leftDegrees, rotationAxisForward) * Quaternion.AngleAxis(rightDegrees, rotationAxisRight);
     }
 
     private static void RotateCamera()
     {
         GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
-        
 
+        float leftDegrees = Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg;
+        float rightDegrees = Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg;
+        //Debug.Log(leftDegrees + " " + rightDegrees);
+        Quaternion rotation = cameraStartRotation * Quaternion.AngleAxis(leftDegrees, cameraAxisUp) * Quaternion.AngleAxis(rightDegrees, cameraAxisRight);
         SceneView scene = SceneView.lastActiveSceneView;
-        Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
-
-        float distance = Mathf.Clamp(scene.cameraDistance - leftStick.y * cameraSpeed, 0f, 1000f);
-        //Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, -rightStick.x * cameraRotationSpeed);
-        //Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, 0f);
-        Quaternion rotation = Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, 0f) * scene.rotation;
-        rotation *= Quaternion.Euler(0f, 0f, -rotation.eulerAngles.z);
-        //Debug.Log(scene.cameraDistance + " " + distance);
-        
-        scene.LookAt(scene.pivot, distance, rotation);
-        //scene.rotation = rotation;
-        //scene.size = SceneViewExtensions.GetSizeFromDistance(scene, distance);
-       
-        //scene.pivot += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
-        //scene.rotation *= Quaternion.Euler(0f, rightStick.x * cameraRotationSpeed, 0f);
-
-        
-        //editorCamera.position += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
-        //scene.rotation *= Quaternion.Euler((editorCamera.right * rightStick.y + editorCamera.up * rightStick.x) * cameraRotationSpeed);
-        //editorCamera.rotation *= Quaternion.Euler((editorCamera.right * rightStick.y + editorCamera.up * rightStick.x) * cameraRotationSpeed);
-
+        scene.LookAt(scene.pivot, scene.cameraDistance, rotation);
     }
+
+    /* private static void RotateCamera()
+     {
+         GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
+
+
+         SceneView scene = SceneView.lastActiveSceneView;
+         Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
+
+         float distance = Mathf.Clamp(scene.cameraDistance - rightStick.y * cameraSpeed, 0f, 1000f);
+         //Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, -rightStick.x * cameraRotationSpeed);
+         //Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, 0f);
+         //Quaternion rotation = Quaternion.Euler(-leftStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, 0f) * scene.rotation;
+         //rotation *= Quaternion.Euler(0f, 0f, -rotation.eulerAngles.z);
+         Quaternion rotation = scene.rotation
+             * Quaternion.Euler(leftStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, 0f);
+         rotation *= Quaternion.Euler(0f, 0f, -rotation.eulerAngles.z);
+
+         //Debug.Log(scene.cameraDistance + " " + distance);
+
+         scene.LookAt(scene.pivot, distance, rotation);
+         //scene.rotation = rotation;
+         //scene.size = SceneViewExtensions.GetSizeFromDistance(scene, distance);
+
+         //scene.pivot += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
+         //scene.rotation *= Quaternion.Euler(0f, rightStick.x * cameraRotationSpeed, 0f);
+
+
+         //editorCamera.position += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
+         //scene.rotation *= Quaternion.Euler((editorCamera.right * rightStick.y + editorCamera.up * rightStick.x) * cameraRotationSpeed);
+         //editorCamera.rotation *= Quaternion.Euler((editorCamera.right * rightStick.y + editorCamera.up * rightStick.x) * cameraRotationSpeed);
+
+     }*/
 
     private static void GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick)
     {
@@ -217,36 +243,7 @@ public class EditorGamepad
         rightStick = new Vector2(Mathf.Abs(rightStick.x) > rightStickDeadzone ? rightStick.x : 0f, Mathf.Abs(rightStick.y) > rightStickDeadzone ? rightStick.y : 0f);
     }
 
-    private static bool InitGizmos() //TODO instantiate instead of looking in scene
-    {
-        if (editorGamepadForward == null)
-        {
-            editorGamepadForward = GameObject.Find("EditorGamepadForward");
-            if (editorGamepadForward == null)
-            {
-                return false;
-            }
-        }
-
-        if (editorGamepadUp == null)
-        {
-            editorGamepadUp = GameObject.Find("EditorGamepadUp");
-            if (editorGamepadUp == null)
-            {
-                return false;
-            }
-        }
-
-        if (editorGamepadRoot == null)
-        {
-            editorGamepadRoot = GameObject.Find("EditorGamepadRoot");
-            if (editorGamepadRoot == null)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
+   
 
     static int Mod(int k, int n) 
     {
