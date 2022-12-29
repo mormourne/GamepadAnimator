@@ -81,7 +81,9 @@ public class EditorGamepad
             if (!isRightTriggerPressed)
             {
                 isRightTriggerPressed = true;
-                rotationAxis = SceneView.lastActiveSceneView.camera.transform.forward;
+                //rotationAxis = SceneView.lastActiveSceneView.camera.transform.forward;
+                rotationAxis = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.forward);
+                Debug.Log(rotationAxis);
                 selectionStartRotation = selection.transform.rotation;
             }
             return true;
@@ -173,8 +175,8 @@ public class EditorGamepad
         GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
 
         //Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
-        float degrees = -Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg + 90f;
-        Debug.Log(degrees);
+        float degrees = Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg - 90f;
+        //Debug.Log(degrees);
         selection.transform.rotation = selectionStartRotation * Quaternion.AngleAxis(degrees, rotationAxis);
     }
 
@@ -188,7 +190,7 @@ public class EditorGamepad
 
         float distance = Mathf.Clamp(scene.cameraDistance - leftStick.y * cameraSpeed, 0f, 1000f);
         Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, -rightStick.x * cameraRotationSpeed);
-        Debug.Log(scene.cameraDistance + " " + distance);
+        //Debug.Log(scene.cameraDistance + " " + distance);
         scene.LookAt(scene.pivot, distance, rotation);
         //scene.pivot += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
         //scene.rotation *= Quaternion.Euler(0f, rightStick.x * cameraRotationSpeed, 0f);
