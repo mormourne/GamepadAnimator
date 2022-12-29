@@ -12,6 +12,6 @@ public static class SceneViewExtensions
                 GetSizeFromDistance(sceneView, distance));
 
     // From SceneView.cs / GetPerspectiveCameraDistance().
-    static float GetSizeFromDistance(SceneView sceneView, float distance) =>
+    public static float GetSizeFromDistance(SceneView sceneView, float distance) =>
         distance * Mathf.Sin(sceneView.camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
 }

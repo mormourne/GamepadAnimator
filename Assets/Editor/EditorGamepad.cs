@@ -189,9 +189,16 @@ public class EditorGamepad
         Transform editorCamera = SceneView.lastActiveSceneView.camera.transform;
 
         float distance = Mathf.Clamp(scene.cameraDistance - leftStick.y * cameraSpeed, 0f, 1000f);
-        Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, -rightStick.x * cameraRotationSpeed);
+        //Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, -rightStick.x * cameraRotationSpeed);
+        //Quaternion rotation = scene.rotation * Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, 0f);
+        Quaternion rotation = Quaternion.Euler(rightStick.y * cameraRotationSpeed, -leftStick.x * cameraRotationSpeed, 0f) * scene.rotation;
+        rotation *= Quaternion.Euler(0f, 0f, -rotation.eulerAngles.z);
         //Debug.Log(scene.cameraDistance + " " + distance);
+        
         scene.LookAt(scene.pivot, distance, rotation);
+        //scene.rotation = rotation;
+        //scene.size = SceneViewExtensions.GetSizeFromDistance(scene, distance);
+       
         //scene.pivot += (editorCamera.forward * leftStick.y + editorCamera.right * leftStick.x) * cameraSpeed;
         //scene.rotation *= Quaternion.Euler(0f, rightStick.x * cameraRotationSpeed, 0f);
 
