@@ -50,6 +50,10 @@ public class EditorGamepad
                 }
                 else if (CheckLeftTrigger())
                 {
+                    if (CheckArrowKeys())
+                    {
+                        return;
+                    }
                     RotateCamera();
                 }
                 else if (gamepad.rightShoulder.isPressed)
@@ -107,7 +111,9 @@ public class EditorGamepad
             {
                 isLeftTriggerPressed = true;
                 cameraAxisUp = Vector3.up;
-                cameraAxisRight = SceneView.lastActiveSceneView.camera.transform.right;
+                //cameraAxisRight = SceneView.lastActiveSceneView.camera.transform.right;
+                //cameraAxisRight = selection.transform.right;
+                cameraAxisRight = Vector3.right;
                 cameraStartRotation = SceneView.lastActiveSceneView.camera.transform.rotation;
             }
             return true;
@@ -122,6 +128,41 @@ public class EditorGamepad
         }
     }
 
+
+    private static bool CheckArrowKeys()
+    {
+        bool snapRotation = false;
+        Quaternion rotation = Quaternion.identity;
+        if (gamepad.dpad.up.isPressed)
+        {
+            snapRotation = true;
+            rotation = Quaternion.Euler(90f, 180f, 0f);
+        }
+        else if (gamepad.dpad.down.isPressed)
+        {
+            snapRotation = true;
+            rotation = Quaternion.Euler(0f, 180f, 0f);
+        }
+        else if (gamepad.dpad.left.isPressed)
+        {
+            snapRotation = true;
+            rotation = Quaternion.Euler(0f, -90f, 0f);
+        }
+        else if (gamepad.dpad.right.isPressed)
+        {
+            snapRotation = true;
+            rotation = Quaternion.Euler(0f, 90f, 0f);
+        }
+
+        if (snapRotation)
+        {
+            SceneView.lastActiveSceneView.rotation = rotation;
+            cameraStartRotation = rotation;
+            return true;
+        }
+
+        return false;
+    }
 
 
 
@@ -182,7 +223,7 @@ public class EditorGamepad
 
     private static void RotateSelection()
     {
-        GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
+        GetStickInputs(out Vector2 leftStick, out Vector2 rightStick);
 
         float leftDegrees = Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg;
         float rightDegrees = Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg;
@@ -192,12 +233,19 @@ public class EditorGamepad
 
     private static void RotateCamera()
     {
-        GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick);
-
-        float leftDegrees = Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg;
+        GetStickInputs(out Vector2 leftStick, out Vector2 rightStick);
+        float leftDegrees = -Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg;
         float rightDegrees = Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg;
-        //Debug.Log(leftDegrees + " " + rightDegrees);
+
+        /*GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, false);
+        float leftStickPowX = Mathf.Pow(Mathf.Abs(leftStick.x), 1) * Mathf.Sign(leftStick.x);
+        float leftStickPowY = Mathf.Pow(Mathf.Abs(leftStick.y), 1) * Mathf.Sign(leftStick.y);
+        float leftDegrees = -leftStickPowX * 90f;
+        float rightDegrees = -leftStickPowY * 90f;*/
+
         Quaternion rotation = cameraStartRotation * Quaternion.AngleAxis(leftDegrees, cameraAxisUp) * Quaternion.AngleAxis(rightDegrees, cameraAxisRight);
+        rotation *= Quaternion.Euler(0f, 0f, -rotation.eulerAngles.z);
+        
         SceneView scene = SceneView.lastActiveSceneView;
         scene.LookAt(scene.pivot, scene.cameraDistance, rotation);
     }
@@ -235,12 +283,16 @@ public class EditorGamepad
 
      }*/
 
-    private static void GetDeadzonedStickInputs(out Vector2 leftStick, out Vector2 rightStick)
+    private static void GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, bool deadzoned = true)
     {
         leftStick = gamepad.leftStick.ReadValue();
         rightStick = gamepad.rightStick.ReadValue();
-        leftStick = new Vector2(Mathf.Abs(leftStick.x) > leftStickDeadzone ? leftStick.x : 0f, Mathf.Abs(leftStick.y) > leftStickDeadzone ? leftStick.y : 0f);
-        rightStick = new Vector2(Mathf.Abs(rightStick.x) > rightStickDeadzone ? rightStick.x : 0f, Mathf.Abs(rightStick.y) > rightStickDeadzone ? rightStick.y : 0f);
+        if (deadzoned)
+        {
+            leftStick = new Vector2(Mathf.Abs(leftStick.x) > leftStickDeadzone ? leftStick.x : 0f, Mathf.Abs(leftStick.y) > leftStickDeadzone ? leftStick.y : 0f);
+            rightStick = new Vector2(Mathf.Abs(rightStick.x) > rightStickDeadzone ? rightStick.x : 0f, Mathf.Abs(rightStick.y) > rightStickDeadzone ? rightStick.y : 0f);
+        }
+        
     }
 
    
