@@ -18,8 +18,8 @@ public class EditorGamepad
     const float selectionRotationSpeed = 0.5f;
     const float cameraSpeed = 0.05f;
     const float cameraRotationSpeed = 0.5f;
-    const float leftStickDeadzone = 0.25f;
-    const float rightStickDeadzone = 0.25f;
+    const float leftStickSqrMagnitudeDeadzone = 0.1f;
+    const float rightStickSqrMagnitudeDeadzone = 0.1f;
 
     const double changeSelectionCooldown = 0.2f;
     static double changeSelectionNextAvailability = 0f;
@@ -110,11 +110,7 @@ public class EditorGamepad
             if (!isLeftTriggerPressed)
             {
                 isLeftTriggerPressed = true;
-                cameraAxisUp = Vector3.up;
-                //cameraAxisRight = SceneView.lastActiveSceneView.camera.transform.right;
-                //cameraAxisRight = selection.transform.right;
-                cameraAxisRight = Vector3.right;
-                cameraStartRotation = SceneView.lastActiveSceneView.camera.transform.rotation;
+                CameraResetRotationAndAxes();
             }
             return true;
         }
@@ -126,6 +122,13 @@ public class EditorGamepad
             }
             return false;
         }
+    }
+
+    private static void CameraResetRotationAndAxes()
+    {
+        cameraAxisUp = SceneView.lastActiveSceneView.camera.transform.InverseTransformDirection(Vector3.up);
+        cameraAxisRight = Vector3.right;
+        cameraStartRotation = SceneView.lastActiveSceneView.camera.transform.rotation;
     }
 
 
@@ -157,7 +160,7 @@ public class EditorGamepad
         if (snapRotation)
         {
             SceneView.lastActiveSceneView.rotation = rotation;
-            cameraStartRotation = rotation;
+            CameraResetRotationAndAxes();
             return true;
         }
 
@@ -234,8 +237,10 @@ public class EditorGamepad
     private static void RotateCamera()
     {
         GetStickInputs(out Vector2 leftStick, out Vector2 rightStick);
-        float leftDegrees = -Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg;
+        float leftDegrees = leftStick == Vector2.zero ? 0f : -Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg - 90f;
         float rightDegrees = Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg;
+
+        Debug.Log("Rotate camera " + leftDegrees + " " + rightDegrees);
 
         /*GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, false);
         float leftStickPowX = Mathf.Pow(Mathf.Abs(leftStick.x), 1) * Mathf.Sign(leftStick.x);
@@ -283,14 +288,14 @@ public class EditorGamepad
 
      }*/
 
-    private static void GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, bool deadzoned = true)
+    private static void GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, bool deadzoned = true) 
     {
         leftStick = gamepad.leftStick.ReadValue();
         rightStick = gamepad.rightStick.ReadValue();
         if (deadzoned)
         {
-            leftStick = new Vector2(Mathf.Abs(leftStick.x) > leftStickDeadzone ? leftStick.x : 0f, Mathf.Abs(leftStick.y) > leftStickDeadzone ? leftStick.y : 0f);
-            rightStick = new Vector2(Mathf.Abs(rightStick.x) > rightStickDeadzone ? rightStick.x : 0f, Mathf.Abs(rightStick.y) > rightStickDeadzone ? rightStick.y : 0f);
+            leftStick = leftStick.sqrMagnitude < leftStickSqrMagnitudeDeadzone ? Vector2.zero : leftStick;
+            rightStick = rightStick.sqrMagnitude < rightStickSqrMagnitudeDeadzone ? Vector2.zero : rightStick;
         }
         
     }
