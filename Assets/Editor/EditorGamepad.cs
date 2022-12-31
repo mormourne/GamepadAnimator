@@ -20,6 +20,16 @@ public class EditorGamepad
     const double changeSelectionCooldown = 0.2f;
     static double changeSelectionNextAvailability = 0f;
 
+    private static bool isRotatingSelection = false;
+    private static Vector3 selectionAxisForward;
+    private static Vector3 selectionAxisUp;
+    private static Quaternion selectionStartRotation;
+
+    private static bool isRotatingCamera = false;
+    private static Vector3 cameraAxisUp;
+    private static Vector3 cameraAxisRight;
+    private static Quaternion cameraStartRotation;
+
     static EditorGamepad()
         => EditorApplication.update += Update;
 
@@ -27,93 +37,78 @@ public class EditorGamepad
 
     static void Update()
     {
+        if (EditorApplication.isPlaying) return;
+
         gamepad = Gamepad.current;
         if (gamepad == null) return;
 
-        if (!EditorApplication.isPlaying)
+        if (Selection.activeGameObject == null && Selection.activeGameObject.scene == null) return;
+
+        if (selection != Selection.activeGameObject)
         {
-            if (Selection.activeGameObject != null && Selection.activeGameObject.scene != null)
+            OnSelectionChanged();
+        }
+
+        if (CheckRotatingSelection())
+        {
+            RotateSelection();
+        }
+        else if (CheckRotatingCamera())
+        {
+            if (CheckArrowKeys())
             {
-                if (selection != Selection.activeGameObject)
-                {
-                    OnSelectionChanged();
-                }
-
-                if (CheckRightTrigger())
-                {
-                    RotateSelection();
-                }
-                else if (CheckLeftTrigger())
-                {
-                    if (CheckArrowKeys())
-                    {
-                        return;
-                    }
-                    RotateCamera();
-                }
-                else if (gamepad.rightShoulder.isPressed)
-                {
-                    ChangeSelectionFromHierarchy();
-                }
-
-
+                return;
             }
-
-
+            RotateCamera();
+        }
+        else if (gamepad.rightShoulder.isPressed)
+        {
+            ChangeSelectionFromHierarchy();
         }
     }
 
-    private static bool isRightTriggerPressed = false;
-    private static Vector3 rotationAxisForward;
-    private static Vector3 rotationAxisUp;
-    private static Quaternion selectionStartRotation;
-    private static bool CheckRightTrigger()
+  
+    private static bool CheckRotatingSelection()
     {
         if (gamepad.rightTrigger.isPressed)
         {
-            if (!isRightTriggerPressed)
+            if (!isRotatingSelection)
             {
-                isRightTriggerPressed = true;
-                //rotationAxis = SceneView.lastActiveSceneView.camera.transform.forward;
-                rotationAxisForward = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.forward);
-                rotationAxisUp = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.up);
-                Debug.Log(rotationAxisForward);
+                isRotatingSelection = true;
+                selectionAxisForward = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.forward);
+                selectionAxisUp = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.up);
                 selectionStartRotation = selection.transform.rotation;
             }
             return true;
         }
         else
         {
-            if (isRightTriggerPressed)
+            if (isRotatingSelection)
             {
-                isRightTriggerPressed = false;
+                isRotatingSelection = false;
             }
             return false;
         }
     }
 
 
-    private static bool isLeftTriggerPressed = false;
-    private static Vector3 cameraAxisUp;
-    private static Vector3 cameraAxisRight;
-    private static Quaternion cameraStartRotation;
 
-    private static bool CheckLeftTrigger()
+    private static bool CheckRotatingCamera()
     {
         if (gamepad.leftTrigger.isPressed)
         {
-            if (!isLeftTriggerPressed)
+            if (!isRotatingCamera)
             {
-                isLeftTriggerPressed = true;
+                isRotatingCamera = true;
                 CameraResetRotationAndAxes();
             }
             return true;
         }
         else
         {
-            if (isLeftTriggerPressed)
+            if (isRotatingCamera)
             {
-                isLeftTriggerPressed = false;
+                isRotatingCamera = false;
             }
             return false;
         }
@@ -212,8 +207,6 @@ public class EditorGamepad
     {
         selection = Selection.activeGameObject;
         selectionRoot = selection.transform.root.gameObject;
-        
-
         SceneView.lastActiveSceneView.pivot = selection.transform.position;
     }
 
@@ -225,12 +218,16 @@ public class EditorGamepad
 
         float leftDegrees = leftStick == Vector2.zero ? 0f : Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg - 90f;
         float rightDegrees = rightStick == Vector2.zero ? 0f : -Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg + 90f;
-        selection.transform.rotation = selectionStartRotation * Quaternion.AngleAxis(leftDegrees, rotationAxisForward) * Quaternion.AngleAxis(rightDegrees, rotationAxisUp);
+
+        selection.transform.rotation = selectionStartRotation 
+            * Quaternion.AngleAxis(leftDegrees, selectionAxisForward) 
+            * Quaternion.AngleAxis(rightDegrees, selectionAxisUp);
     }
 
     private static void RotateCamera()
     {
         GetStickInputs(out Vector2 leftStick, out Vector2 rightStick);
+
         float leftDegrees = leftStick == Vector2.zero ? 0f : -Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg - 90f;
         float rightDegrees = Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg;
 
