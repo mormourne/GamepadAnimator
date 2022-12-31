@@ -9,7 +9,8 @@ public class EditorGamepad
 {
     static Gamepad gamepad;
 
-   
+    private static double lastFrameTime;
+    private static double deltaTime;
 
     static GameObject selection;
     static GameObject selectionRoot;
@@ -31,7 +32,12 @@ public class EditorGamepad
     private static Quaternion cameraStartRotation;
 
     static EditorGamepad()
-        => EditorApplication.update += Update;
+    {
+        EditorApplication.update += Update;
+        lastFrameTime = EditorApplication.timeSinceStartup;
+        deltaTime = 0f;
+    }
+        
 
     
 
@@ -42,7 +48,10 @@ public class EditorGamepad
         gamepad = Gamepad.current;
         if (gamepad == null) return;
 
-        if (Selection.activeGameObject == null && Selection.activeGameObject.scene == null) return;
+        if (Selection.activeGameObject == null || Selection.activeGameObject.scene == null) return;
+
+        deltaTime = EditorApplication.timeSinceStartup - lastFrameTime;
+        lastFrameTime = EditorApplication.timeSinceStartup;
 
         if (selection != Selection.activeGameObject)
         {
@@ -61,12 +70,38 @@ public class EditorGamepad
             }
             RotateCamera();
         }
-        else if (gamepad.rightShoulder.isPressed)
+        else if (gamepad.leftStickButton.isPressed)
         {
             ChangeSelectionFromHierarchy();
         }
+        else if (gamepad.rightShoulder.isPressed || gamepad.leftShoulder.isPressed)
+        {
+            TryRewindAnimation(gamepad.rightShoulder.isPressed);
+        }
     }
 
+
+    private static bool TryRewindAnimation(bool forward)
+    {
+        if (!CheckAnimationWindowOpen(out AnimationWindow animationWindow))
+        {
+            return false;
+        }
+        animationWindow.time += (forward ? 1f : -1f) * (float) deltaTime;
+        return true;
+    }
+
+    private static bool CheckAnimationWindowOpen(out AnimationWindow animationWindow)
+    {
+        if (!EditorWindow.HasOpenInstances<AnimationWindow>())
+        {
+            animationWindow = null;
+            return false;
+        }
+
+        animationWindow = EditorWindow.GetWindow<AnimationWindow>();
+        return true;
+    }
   
     private static bool CheckRotatingSelection()
     {
@@ -78,6 +113,10 @@ public class EditorGamepad
                 selectionAxisForward = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.forward);
                 selectionAxisUp = selection.transform.InverseTransformDirection(SceneView.lastActiveSceneView.camera.transform.up);
                 selectionStartRotation = selection.transform.rotation;
+            }
+            else
+            {
+                Undo.RecordObject(selection.transform, "Rotate " + selection.name);
             }
             return true;
         }
