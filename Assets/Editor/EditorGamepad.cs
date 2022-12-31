@@ -37,9 +37,9 @@ public class EditorGamepad
         lastFrameTime = EditorApplication.timeSinceStartup;
         deltaTime = 0f;
     }
-        
 
-    
+
+
 
     static void Update()
     {
@@ -48,15 +48,16 @@ public class EditorGamepad
         gamepad = Gamepad.current;
         if (gamepad == null) return;
 
-        if (Selection.activeGameObject == null || Selection.activeGameObject.scene == null) return;
+        if (!CheckSelection()) return; //if (Selection.activeGameObject == null || Selection.activeGameObject.scene == null) return;
+
 
         deltaTime = EditorApplication.timeSinceStartup - lastFrameTime;
         lastFrameTime = EditorApplication.timeSinceStartup;
 
-        if (selection != Selection.activeGameObject)
+        /*if (selection != Selection.activeGameObject)
         {
             OnSelectionChanged();
-        }
+        }*/
 
         if (CheckRotatingSelection())
         {
@@ -64,11 +65,10 @@ public class EditorGamepad
         }
         else if (CheckRotatingCamera())
         {
-            if (CheckArrowKeys())
+            if (!CheckArrowKeys())
             {
-                return;
+                RotateCamera();
             }
-            RotateCamera();
         }
         else if (gamepad.leftStickButton.isPressed)
         {
@@ -78,6 +78,35 @@ public class EditorGamepad
         {
             TryRewindAnimation(gamepad.rightShoulder.isPressed);
         }
+
+        //DrawHierarchyGizmos(selectionRoot.transform, GizmoType.Selected);
+    }
+
+    private static bool CheckSelection()
+    {
+        if (Selection.activeGameObject == null || Selection.activeGameObject.scene == null) return false;
+        if (selectionRoot == null)
+        {
+            if (gamepad.startButton.isPressed)
+            {
+                OnSelectionChanged();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else if (selection.transform.root == selectionRoot.transform)
+        {
+            if (selection != Selection.activeGameObject)
+            {
+                OnSelectionChanged();
+            }
+            return true;
+        }
+
+        return false;
     }
 
 
@@ -288,6 +317,38 @@ public class EditorGamepad
             rightStick = rightStick.sqrMagnitude < rightStickSqrMagnitudeDeadzone ? Vector2.zero : rightStick;
         }
         
+    }
+
+    [DrawGizmo(GizmoType.Selected)]
+    private static void DrawHierarchyGizmos(Transform transform, GizmoType gizmoType)
+    {
+        if (selectionRoot == null || transform.root != selectionRoot.transform)
+        {
+            return;
+        }
+
+        if (transform.parent != null)
+        {
+            Transform parent = transform.parent;
+            
+            Gizmos.color = Color.blue;
+            Gizmos.DrawSphere(transform.parent.position, 0.05f);
+
+            //TODO diff colors for current, next, previous and usual sibling
+            int siblingIndex = transform.GetSiblingIndex();
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform currentSibling = parent.GetChild(i);
+                Gizmos.color = i == siblingIndex ? Color.green : Color.yellow;
+                Gizmos.DrawSphere(currentSibling.position, 0.05f);
+            }
+        }
+
+        if (transform.childCount > 0)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawSphere(transform.GetChild(0).position, 0.05f);
+        }
     }
 
    
