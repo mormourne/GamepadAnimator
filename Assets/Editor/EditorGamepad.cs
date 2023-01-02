@@ -36,6 +36,11 @@ public class EditorGamepad
     private static float cameraDistance;
     private static Quaternion cameraRotation;
 
+    private static bool isPressingRewind = false;
+    private static bool isPressingRewindForward = false;
+    private static float rewindingPressTimer = 0f;
+    const float rewindingFastThreshold = 0.3f;
+
     static EditorGamepad()
     {
         EditorApplication.update += Update;
@@ -77,9 +82,9 @@ public class EditorGamepad
         {
             ChangeSelectionFromHierarchy();
         }
-        else if (gamepad.rightShoulder.isPressed || gamepad.leftShoulder.isPressed)
+        else 
         {
-            TryRewindAnimation(gamepad.rightShoulder.isPressed);
+            TryRewindAnimation();
         }
 
     }
@@ -112,15 +117,58 @@ public class EditorGamepad
     }
 
 
-    private static bool TryRewindAnimation(bool forward)
+   
+    private static bool TryRewindAnimation()
     {
         if (!CheckAnimationWindowOpen(out AnimationWindow animationWindow))
         {
             return false;
         }
-        animationWindow.time += (forward ? 1f : -1f) * (float) deltaTime;
+
+        bool forward = gamepad.rightShoulder.isPressed;
+        bool backward = gamepad.leftShoulder.isPressed;
+        if (!forward && !backward)
+        {
+            isPressingRewind = false;
+            rewindingPressTimer = 0f;
+            return false;
+        }
+
+        if (isPressingRewind)
+        {
+            bool changeDirection = (isPressingRewindForward && backward) || (!isPressingRewindForward && forward);
+            if (changeDirection)
+            {
+                RewindFrame(animationWindow, forward);
+                isPressingRewindForward = forward;
+                rewindingPressTimer = 0f;
+            }
+            else
+            {
+                rewindingPressTimer += deltaTime;
+                if (rewindingPressTimer >= rewindingFastThreshold)
+                {
+                    RewindFrame(animationWindow, forward);
+                }
+            }
+        }
+        else
+        {
+            RewindFrame(animationWindow, forward);
+            isPressingRewind = true;
+            isPressingRewindForward = forward;
+            rewindingPressTimer = 0f;
+        }
+        
         return true;
     }
+
+   
+    private static void RewindFrame(AnimationWindow animationWindow, bool forward)
+    {
+        animationWindow.frame += forward ? 1 : -1;
+    }
+
 
     private static bool CheckAnimationWindowOpen(out AnimationWindow animationWindow)
     {
