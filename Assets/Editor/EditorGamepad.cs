@@ -355,25 +355,33 @@ public class EditorGamepad
         if (transform.parent != null)
         {
             Transform parent = transform.parent;
-            
-            Gizmos.color = Color.blue;
-            Gizmos.DrawSphere(transform.parent.position, 0.05f);
 
-            //TODO diff colors for current, next, previous and usual sibling
+            Gizmos.color = Color.blue;
+            DrawGizmoInPseudoScreenSpace(transform.parent.position);
+
             int siblingIndex = transform.GetSiblingIndex();
             for (int i = 0; i < parent.childCount; i++)
             {
                 Transform currentSibling = parent.GetChild(i);
                 Gizmos.color = i == siblingIndex ? Color.green : Color.yellow;
-                Gizmos.DrawSphere(currentSibling.position, 0.05f);
+                DrawGizmoInPseudoScreenSpace(currentSibling.position);
             }
         }
 
         if (transform.childCount > 0)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawSphere(transform.GetChild(0).position, 0.05f);
+            DrawGizmoInPseudoScreenSpace(transform.GetChild(0).position);
         }
+    }
+
+    private static void DrawGizmoInPseudoScreenSpace(Vector3 gizmoWorldPosition)
+    {
+        Camera sceneCamera = SceneView.lastActiveSceneView.camera;
+        Vector3 distanceFromCamera = (gizmoWorldPosition - sceneCamera.transform.position).normalized;
+        Vector3 gizmoPosition = sceneCamera.transform.position + distanceFromCamera * sceneCamera.nearClipPlane * 2f;
+        float gizmoSize = 0.0003f;
+        Gizmos.DrawSphere(gizmoPosition, gizmoSize);
     }
 
    
