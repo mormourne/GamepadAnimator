@@ -10,10 +10,13 @@ public class EditorGamepad
     static Gamepad gamepad;
 
     private static double lastFrameTime;
-    private static double deltaTime;
+    private static float deltaTime;
 
     static GameObject selection;
     static GameObject selectionRoot;
+
+    const float cameraZoomSpeed = 3f;
+    
 
     const float leftStickSqrMagnitudeDeadzone = 0.1f;
     const float rightStickSqrMagnitudeDeadzone = 0.1f;
@@ -30,6 +33,8 @@ public class EditorGamepad
     private static Vector3 cameraAxisUp;
     private static Vector3 cameraAxisRight;
     private static Quaternion cameraStartRotation;
+    private static float cameraDistance;
+    private static Quaternion cameraRotation;
 
     static EditorGamepad()
     {
@@ -48,27 +53,25 @@ public class EditorGamepad
         gamepad = Gamepad.current;
         if (gamepad == null) return;
 
-        if (!CheckSelection()) return; //if (Selection.activeGameObject == null || Selection.activeGameObject.scene == null) return;
+        if (!CheckSelection()) return; 
 
 
-        deltaTime = EditorApplication.timeSinceStartup - lastFrameTime;
+        deltaTime = (float)(EditorApplication.timeSinceStartup - lastFrameTime);
         lastFrameTime = EditorApplication.timeSinceStartup;
 
-        /*if (selection != Selection.activeGameObject)
-        {
-            OnSelectionChanged();
-        }*/
 
-        if (CheckRotatingSelection())
+        if (CheckRotatingCamera())
+        {
+            if (!SnapRotationToPredefined())
+            {
+                ZoomCamera();
+                RotateCamera();
+                ApplyCameraRotation();
+            }
+        }
+        else if (CheckRotatingSelection())
         {
             RotateSelection();
-        }
-        else if (CheckRotatingCamera())
-        {
-            if (!CheckArrowKeys())
-            {
-                RotateCamera();
-            }
         }
         else if (gamepad.leftStickButton.isPressed)
         {
@@ -79,7 +82,6 @@ public class EditorGamepad
             TryRewindAnimation(gamepad.rightShoulder.isPressed);
         }
 
-        //DrawHierarchyGizmos(selectionRoot.transform, GizmoType.Selected);
     }
 
     private static bool CheckSelection()
@@ -189,8 +191,27 @@ public class EditorGamepad
         cameraStartRotation = SceneView.lastActiveSceneView.camera.transform.rotation;
     }
 
+    private static bool ZoomCamera()
+    {
+        SceneView scene = SceneView.lastActiveSceneView;
+        cameraDistance = scene.cameraDistance;
 
-    private static bool CheckArrowKeys()
+        bool rightShoulder = gamepad.rightShoulder.isPressed;
+        bool rightTrigger= gamepad.rightTrigger.isPressed;
+
+        if (!rightShoulder && !rightTrigger)
+        {
+            return false;
+        }
+        
+         cameraDistance += cameraZoomSpeed * deltaTime * (rightShoulder ? 1f : -1f);
+        
+        
+        return true;
+    }
+
+
+    private static bool SnapRotationToPredefined()
     {
         bool snapRotation = false;
         Quaternion rotation = Quaternion.identity;
@@ -278,7 +299,11 @@ public class EditorGamepad
         SceneView.lastActiveSceneView.pivot = selection.transform.position;
     }
 
-    
+    private static void ApplyCameraRotation()
+    {
+        SceneView scene = SceneView.lastActiveSceneView;
+        scene.LookAt(scene.pivot, cameraDistance, cameraRotation);
+    }
 
     private static void RotateSelection()
     {
@@ -299,11 +324,11 @@ public class EditorGamepad
         float leftDegrees = leftStick == Vector2.zero ? 0f : -Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg - 90f;
         float rightDegrees = Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg;
 
-        Quaternion rotation = cameraStartRotation * Quaternion.AngleAxis(leftDegrees, cameraAxisUp) * Quaternion.AngleAxis(rightDegrees, cameraAxisRight);
-        rotation *= Quaternion.Euler(0f, 0f, -rotation.eulerAngles.z);
+        cameraRotation = cameraStartRotation * Quaternion.AngleAxis(leftDegrees, cameraAxisUp) * Quaternion.AngleAxis(rightDegrees, cameraAxisRight);
+        cameraRotation *= Quaternion.Euler(0f, 0f, -cameraRotation.eulerAngles.z);
         
-        SceneView scene = SceneView.lastActiveSceneView;
-        scene.LookAt(scene.pivot, scene.cameraDistance, rotation);
+        
+        
     }
 
    
