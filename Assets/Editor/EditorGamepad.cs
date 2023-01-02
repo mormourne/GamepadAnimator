@@ -15,8 +15,9 @@ public class EditorGamepad
     static GameObject selection;
     static GameObject selectionRoot;
 
+    const float rootMovementSpeed = 1f;
+
     const float cameraZoomSpeed = 3f;
-    
 
     const float leftStickSqrMagnitudeDeadzone = 0.1f;
     const float rightStickSqrMagnitudeDeadzone = 0.1f;
@@ -46,6 +47,7 @@ public class EditorGamepad
         EditorApplication.update += Update;
         lastFrameTime = EditorApplication.timeSinceStartup;
         deltaTime = 0f;
+        
     }
 
 
@@ -58,12 +60,14 @@ public class EditorGamepad
         gamepad = Gamepad.current;
         if (gamepad == null) return;
 
-        if (!CheckSelection()) return; 
+        if (!CheckSelection()) return;
 
 
         deltaTime = (float)(EditorApplication.timeSinceStartup - lastFrameTime);
         lastFrameTime = EditorApplication.timeSinceStartup;
 
+        
+        //GetCameraLocalXZAxes(out Vector3 xAxis, out Vector3 zAxis);
 
         if (CheckRotatingCamera())
         {
@@ -73,19 +77,26 @@ public class EditorGamepad
                 RotateCamera();
                 ApplyCameraRotation();
             }
+            return;
         }
-        else if (CheckRotatingSelection())
+
+        if (CheckMoveRoot())
+        {
+            return;
+        }
+
+        if (CheckRotatingSelection())
         {
             RotateSelection();
+            return;
         }
-        else if (gamepad.leftStickButton.isPressed)
+        if (CheckChangeSelectionFromHierarchy())
         {
-            ChangeSelectionFromHierarchy();
+            return;
         }
-        else 
-        {
-            TryRewindAnimation();
-        }
+
+        TryRewindAnimation();
+
 
     }
 
@@ -117,7 +128,7 @@ public class EditorGamepad
     }
 
 
-   
+
     private static bool TryRewindAnimation()
     {
         if (!CheckAnimationWindowOpen(out AnimationWindow animationWindow))
@@ -159,11 +170,11 @@ public class EditorGamepad
             isPressingRewindForward = forward;
             rewindingPressTimer = 0f;
         }
-        
+
         return true;
     }
 
-   
+
     private static void RewindFrame(AnimationWindow animationWindow, bool forward)
     {
         animationWindow.frame += forward ? 1 : -1;
@@ -181,7 +192,7 @@ public class EditorGamepad
         animationWindow = EditorWindow.GetWindow<AnimationWindow>();
         return true;
     }
-  
+
     private static bool CheckRotatingSelection()
     {
         if (gamepad.rightTrigger.isPressed)
@@ -243,18 +254,20 @@ public class EditorGamepad
     {
         SceneView scene = SceneView.lastActiveSceneView;
         cameraDistance = scene.cameraDistance;
-
+        Debug.Log("In zoom pre add " + cameraDistance);
         bool rightShoulder = gamepad.rightShoulder.isPressed;
-        bool rightTrigger= gamepad.rightTrigger.isPressed;
+        bool rightTrigger = gamepad.rightTrigger.isPressed;
+
+        //Debug.Log(rightShoulder + " " + rightTrigger);
 
         if (!rightShoulder && !rightTrigger)
         {
             return false;
         }
-        
-         cameraDistance += cameraZoomSpeed * deltaTime * (rightShoulder ? 1f : -1f);
-        
-        
+
+        cameraDistance += cameraZoomSpeed * deltaTime * (rightShoulder ? 1f : -1f);
+
+
         return true;
     }
 
@@ -296,8 +309,13 @@ public class EditorGamepad
 
 
 
-    private static void ChangeSelectionFromHierarchy() 
+    private static bool CheckChangeSelectionFromHierarchy()
     {
+        if (!gamepad.leftStickButton.isPressed)
+        {
+            return false;
+        }
+
         if (gamepad.buttonNorth.isPressed && CheckChangeSelectionCooldown())
         {
             Transform selectionParent = selection.transform.parent;
@@ -305,11 +323,13 @@ public class EditorGamepad
             {
                 Selection.activeGameObject = selectionParent.gameObject;
             }
+            return true;
         }
         else if (gamepad.buttonSouth.isPressed && selection.transform.childCount > 0 && CheckChangeSelectionCooldown())
         {
             Transform selectionFirstChild = selection.transform.GetChild(0);
             Selection.activeGameObject = selectionFirstChild.gameObject;
+            return true;
         }
         else
         {
@@ -317,7 +337,7 @@ public class EditorGamepad
             bool east = gamepad.buttonEast.isPressed;
             if (!east && !west)
             {
-                return;
+                return false;
             }
             Transform parent = selection.transform.parent;
             if (parent != null && parent.childCount > 1 && CheckChangeSelectionCooldown())
@@ -327,6 +347,8 @@ public class EditorGamepad
                 int newIndex = Mod(west ? currentIndex - 1 : currentIndex + 1, childCount);
                 Selection.activeGameObject = parent.GetChild(newIndex).gameObject;
             }
+
+            return true;
         }
     }
 
@@ -351,6 +373,7 @@ public class EditorGamepad
     {
         SceneView scene = SceneView.lastActiveSceneView;
         scene.LookAt(scene.pivot, cameraDistance, cameraRotation);
+        Debug.Log("Apply post look at " + SceneView.lastActiveSceneView.cameraDistance + " " + cameraDistance);
     }
 
     private static void RotateSelection()
@@ -360,8 +383,8 @@ public class EditorGamepad
         float leftDegrees = leftStick == Vector2.zero ? 0f : Mathf.Atan2(leftStick.y, leftStick.x) * Mathf.Rad2Deg - 90f;
         float rightDegrees = rightStick == Vector2.zero ? 0f : -Mathf.Atan2(rightStick.y, rightStick.x) * Mathf.Rad2Deg + 90f;
 
-        selection.transform.rotation = selectionStartRotation 
-            * Quaternion.AngleAxis(leftDegrees, selectionAxisForward) 
+        selection.transform.rotation = selectionStartRotation
+            * Quaternion.AngleAxis(leftDegrees, selectionAxisForward)
             * Quaternion.AngleAxis(rightDegrees, selectionAxisUp);
     }
 
@@ -374,13 +397,30 @@ public class EditorGamepad
 
         cameraRotation = cameraStartRotation * Quaternion.AngleAxis(leftDegrees, cameraAxisUp) * Quaternion.AngleAxis(rightDegrees, cameraAxisRight);
         cameraRotation *= Quaternion.Euler(0f, 0f, -cameraRotation.eulerAngles.z);
-        
-        
-        
     }
 
-   
-    private static void GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, bool deadzoned = true) 
+    private static bool CheckMoveRoot()
+    {
+        if (!gamepad.rightTrigger.isPressed || !gamepad.leftShoulder.isPressed)
+        {
+            return false;
+        }
+        GetStickInputs(out Vector2 leftStick, out Vector2 rightStick);
+        GetCameraLocalXZAxes(out Vector3 xAxis, out Vector3 zAxis);
+        //Debug.Log("CheckMoveRoot " + xAxis + " " + zAxis);
+        selectionRoot.transform.position += (xAxis * leftStick.x + Vector3.up * rightStick.y + zAxis * leftStick.y) * rootMovementSpeed * deltaTime;
+        return true;
+    }
+
+    private static void GetCameraLocalXZAxes(out Vector3 xAxis, out Vector3 zAxis)
+    {
+        Transform sceneCameraTransform = SceneView.lastActiveSceneView.camera.transform;
+        xAxis = sceneCameraTransform.TransformDirection(sceneCameraTransform.right);
+        zAxis = sceneCameraTransform.TransformDirection(sceneCameraTransform.forward);
+        Debug.Log("CheckMoveRoot " + sceneCameraTransform.right + " " + sceneCameraTransform.forward + " " + xAxis + " " + zAxis);
+    }
+
+    private static void GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, bool deadzoned = true)
     {
         leftStick = gamepad.leftStick.ReadValue();
         rightStick = gamepad.rightStick.ReadValue();
@@ -389,7 +429,7 @@ public class EditorGamepad
             leftStick = leftStick.sqrMagnitude < leftStickSqrMagnitudeDeadzone ? Vector2.zero : leftStick;
             rightStick = rightStick.sqrMagnitude < rightStickSqrMagnitudeDeadzone ? Vector2.zero : rightStick;
         }
-        
+
     }
 
     [DrawGizmo(GizmoType.Selected)]
@@ -432,9 +472,9 @@ public class EditorGamepad
         Gizmos.DrawSphere(gizmoPosition, gizmoSize);
     }
 
-   
 
-    static int Mod(int k, int n) 
+
+    static int Mod(int k, int n)
     {
         int r = k % n;
         return r < 0 ? r + n : r;
@@ -442,4 +482,3 @@ public class EditorGamepad
 }
 
 #endif
- 
