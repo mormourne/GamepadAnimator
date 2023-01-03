@@ -404,8 +404,11 @@ public class EditorGamepad
         }
         GetStickInputs(out Vector2 leftStick, out Vector2 rightStick);
         GetCameraLocalXZAxes(out Vector3 xAxis, out Vector3 zAxis);
-        //Debug.Log("CheckMoveRoot " + xAxis + " " + zAxis);
+        
+
+        Undo.RecordObject(selectionRoot.transform, "Move " + selectionRoot.name);
         selectionRoot.transform.position += (xAxis * leftStick.x + Vector3.up * rightStick.y + zAxis * leftStick.y) * rootMovementSpeed * deltaTime;
+        
         return true;
     }
 
