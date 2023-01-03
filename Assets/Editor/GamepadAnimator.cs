@@ -1,6 +1,9 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using GamepadButton = UnityEngine.InputSystem.LowLevel.GamepadButton;
+using GamepadButtonPressedState = GamepadInputSnapshot.GamepadButtonPressedState;
 
 [InitializeOnLoad]
 public class GamepadAnimator
@@ -8,7 +11,8 @@ public class GamepadAnimator
     private static bool enabled;
     public static bool Enabled
     {
-        get => enabled; set
+        get => enabled; 
+        set
         {
             if (enabled != value)
             {
@@ -20,6 +24,7 @@ public class GamepadAnimator
 
 
     static Gamepad gamepad;
+    static GamepadInputSnapshot lastFrameInputSnapshot;
 
     private static double lastFrameTime;
     private static float deltaTime;
@@ -64,6 +69,7 @@ public class GamepadAnimator
         lastFrameTime = EditorApplication.timeSinceStartup;
         deltaTime = 0f;
         enabled = EditorPrefs.GetBool(EDITOR_PREFS_ENABLED, true);
+        
     }
 
 
@@ -79,6 +85,12 @@ public class GamepadAnimator
 
         if (!CheckSelection()) return;
 
+        GamepadInputSnapshot currentInputSnapshot = new GamepadInputSnapshot(gamepad);
+        if (lastFrameInputSnapshot != null)
+        {
+            Dictionary<GamepadButton, GamepadButtonPressedState> buttons = currentInputSnapshot.CompareInput(lastFrameInputSnapshot);
+        }
+        lastFrameInputSnapshot = currentInputSnapshot;
 
         deltaTime = (float)(EditorApplication.timeSinceStartup - lastFrameTime);
         lastFrameTime = EditorApplication.timeSinceStartup;
