@@ -254,11 +254,9 @@ public class EditorGamepad
     {
         SceneView scene = SceneView.lastActiveSceneView;
         cameraDistance = scene.cameraDistance;
-        Debug.Log("In zoom pre add " + cameraDistance);
         bool rightShoulder = gamepad.rightShoulder.isPressed;
         bool rightTrigger = gamepad.rightTrigger.isPressed;
 
-        //Debug.Log(rightShoulder + " " + rightTrigger);
 
         if (!rightShoulder && !rightTrigger)
         {
@@ -373,7 +371,6 @@ public class EditorGamepad
     {
         SceneView scene = SceneView.lastActiveSceneView;
         scene.LookAt(scene.pivot, cameraDistance, cameraRotation);
-        Debug.Log("Apply post look at " + SceneView.lastActiveSceneView.cameraDistance + " " + cameraDistance);
     }
 
     private static void RotateSelection()
@@ -415,9 +412,8 @@ public class EditorGamepad
     private static void GetCameraLocalXZAxes(out Vector3 xAxis, out Vector3 zAxis)
     {
         Transform sceneCameraTransform = SceneView.lastActiveSceneView.camera.transform;
-        xAxis = sceneCameraTransform.TransformDirection(sceneCameraTransform.right);
-        zAxis = sceneCameraTransform.TransformDirection(sceneCameraTransform.forward);
-        Debug.Log("CheckMoveRoot " + sceneCameraTransform.right + " " + sceneCameraTransform.forward + " " + xAxis + " " + zAxis);
+        xAxis = Vector3.ProjectOnPlane(sceneCameraTransform.right, Vector3.up).normalized;
+        zAxis = Vector3.ProjectOnPlane(sceneCameraTransform.forward + sceneCameraTransform.up, Vector3.up).normalized;
     }
 
     private static void GetStickInputs(out Vector2 leftStick, out Vector2 rightStick, bool deadzoned = true)
