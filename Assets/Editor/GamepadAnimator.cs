@@ -26,6 +26,11 @@ public class GamepadAnimator
     static Gamepad gamepad;
     static GamepadInputSnapshot lastFrameInputSnapshot;
 
+    enum UserInputState //TODO either all possible combinations or multiple state enums for diff functions
+    {
+        None,
+    }
+
     private static double lastFrameTime;
     private static float deltaTime;
 
