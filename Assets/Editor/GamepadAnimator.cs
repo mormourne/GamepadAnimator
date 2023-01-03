@@ -1,12 +1,24 @@
-#if UNITY_EDITOR
-
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 [InitializeOnLoad]
-public class EditorGamepad
+public class GamepadAnimator
 {
+    private static bool enabled;
+    public static bool Enabled
+    {
+        get => enabled; set
+        {
+            if (enabled != value)
+            {
+                EditorPrefs.SetBool(EDITOR_PREFS_ENABLED, value);
+            }
+            enabled = value;
+        }
+    }
+
+
     static Gamepad gamepad;
 
     private static double lastFrameTime;
@@ -42,12 +54,16 @@ public class EditorGamepad
     private static float rewindingPressTimer = 0f;
     const float rewindingFastThreshold = 0.3f;
 
-    static EditorGamepad()
+    public const string EDITOR_PREFS_ENABLED = "EDITOR_PREFS_ENABLED";
+
+    
+
+    static GamepadAnimator()
     {
         EditorApplication.update += Update;
         lastFrameTime = EditorApplication.timeSinceStartup;
         deltaTime = 0f;
-        
+        enabled = EditorPrefs.GetBool(EDITOR_PREFS_ENABLED, true);
     }
 
 
@@ -55,6 +71,7 @@ public class EditorGamepad
 
     static void Update()
     {
+        if (!Enabled) return;
         if (EditorApplication.isPlaying) return;
 
         gamepad = Gamepad.current;
@@ -434,6 +451,8 @@ public class EditorGamepad
     [DrawGizmo(GizmoType.Selected)]
     private static void DrawHierarchyGizmos(Transform transform, GizmoType gizmoType)
     {
+        if (!Enabled) return;
+        
         if (selectionRoot == null || transform.root != selectionRoot.transform)
         {
             return;
@@ -480,4 +499,4 @@ public class EditorGamepad
     }
 }
 
-#endif
+
