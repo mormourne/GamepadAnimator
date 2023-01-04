@@ -64,6 +64,13 @@ public class GamepadAnimator
     private static float rewindingPressTimer = 0f;
     const float rewindingFastThreshold = 0.3f;
 
+    private static bool isCameraTransitionOn = false;
+    private static Vector3 cameraTransitionStart;
+    private static Transform cameraTransitionEnd;
+    private static Vector3 cameraTransitionIntermidatePivot;
+    private static float cameraTransitionDuration;
+    private static float cameraTransitionTimer;
+
     public const string EDITOR_PREFS_ENABLED = "EDITOR_PREFS_ENABLED";
 
     
@@ -100,7 +107,10 @@ public class GamepadAnimator
         deltaTime = (float)(EditorApplication.timeSinceStartup - lastFrameTime);
         lastFrameTime = EditorApplication.timeSinceStartup;
 
-        
+        if (isCameraTransitionOn)
+        {
+            CameraTransition();
+        }
         //GetCameraLocalXZAxes(out Vector3 xAxis, out Vector3 zAxis);
 
         if (CheckRotatingCamera())
@@ -132,6 +142,31 @@ public class GamepadAnimator
         TryRewindAnimation();
 
 
+    }
+
+    
+    private static void InitCameraTransition(Vector3 start, Transform end)
+    {
+        cameraTransitionStart = isCameraTransitionOn ? cameraTransitionIntermidatePivot : start;
+        cameraTransitionEnd = end;
+        cameraTransitionDuration = 0.5f;
+        cameraTransitionTimer = 0f;
+        isCameraTransitionOn = true;
+    }
+
+    private static void CameraTransition()
+    {
+        cameraTransitionTimer += deltaTime;
+        if (cameraTransitionTimer >= cameraTransitionDuration)
+        {
+            cameraTransitionTimer = cameraTransitionDuration;
+            isCameraTransitionOn = false;
+        }
+        float lerp = cameraTransitionTimer / cameraTransitionDuration;
+        float easedQuadLerp = lerp < 0.5f ? 2f * lerp * lerp : 1f - Mathf.Pow(-2f * lerp + 2f, 2f) / 2f;
+        cameraTransitionIntermidatePivot = Vector3.Lerp(cameraTransitionStart, cameraTransitionEnd.position, easedQuadLerp);
+        SceneView scene = SceneView.lastActiveSceneView;
+        scene.LookAtBasedOnDistance(cameraTransitionIntermidatePivot, scene.cameraDistance, scene.rotation);
     }
 
     private static bool CheckSelection()
@@ -396,15 +431,26 @@ public class GamepadAnimator
 
     private static void OnSelectionChanged()
     {
+        SceneView scene = SceneView.lastActiveSceneView;
+        GameObject oldSelection = selection;
         selection = Selection.activeGameObject;
         selectionRoot = selection.transform.root.gameObject;
-        SceneView.lastActiveSceneView.pivot = selection.transform.position;
+        if (oldSelection == null)
+        {
+            scene.LookAtBasedOnDistance(selection.transform.position, scene.cameraDistance, scene.rotation);
+        }
+        else
+        {
+            InitCameraTransition(oldSelection.transform.position, selection.transform);
+        }
+        
+        
     }
 
     private static void ApplyCameraRotation()
     {
         SceneView scene = SceneView.lastActiveSceneView;
-        scene.LookAt(scene.pivot, cameraDistance, cameraRotation);
+        scene.LookAtBasedOnDistance(scene.pivot, cameraDistance, cameraRotation);
     }
 
     private static void RotateSelection()
