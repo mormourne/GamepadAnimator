@@ -240,13 +240,22 @@ namespace Paerowgee.GamepadAnimator
             }
             else if (inputState == InputState.ModifyRoot) //TODO add camera transition
             {
+                bool cameraTransition = false;
                 if (gamepadButtonStates[GamepadButton.RightTrigger].Unpressed())
                 {
                     inputState = InputState.RootInitiated;
+                    cameraTransition = true;
+                    
                 }
                 else if (gamepadButtonStates[GamepadButton.LeftShoulder].Unpressed())
                 {
                     inputState = InputState.ModifySelection;
+                    cameraTransition = true;
+                }
+
+                if (cameraTransition)
+                {
+                    InitCameraTransition(SceneView.lastActiveSceneView.pivot, selection.transform);
                 }
             }
             else if (inputState == InputState.ModifyCamera)
