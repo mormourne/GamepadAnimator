@@ -3,7 +3,7 @@ WIP. Current version 0.2.
 
 This tool allows you to create animations using gamepad in Unity Editor. 
 
-Currently works only in humanoid-friendly way, i.e. root can be moved and rotated and all of its children can be rotated only.
+Currently works only in humanoid-friendly way, i.e. root can be moved and rotated and all of its children can only be rotated.
 
 Both camera and selection rotation are working in *absolute* mode: for example in case of Y-axis camera rotation, 
 you can draw an imaginary circle on the ground around the selection, and the new camera position will correspond to the position of the left stick
