@@ -82,6 +82,8 @@ namespace Paerowgee.GamepadAnimator
         private static float cameraTransitionDuration;
         private static float cameraTransitionTimer;
 
+        private static RigTree rigTree;
+
         public const string EDITOR_PREFS_ENABLED = "EDITOR_PREFS_ENABLED";
 
 
@@ -112,6 +114,9 @@ namespace Paerowgee.GamepadAnimator
 
             CalculateGamepadButtonStates();
             DetermineInputState();
+
+            CheckForRigSnapshot();
+
             switch (inputState)
             {
                 case InputState.None:
@@ -245,7 +250,7 @@ namespace Paerowgee.GamepadAnimator
                 {
                     inputState = InputState.RootInitiated;
                     cameraTransition = true;
-                    
+
                 }
                 else if (gamepadButtonStates[GamepadButton.LeftShoulder].Unpressed())
                 {
@@ -295,6 +300,16 @@ namespace Paerowgee.GamepadAnimator
                 gamepadButtonStates = currentInputSnapshot.CompareInput(lastFrameInputSnapshot);
             }
             lastFrameInputSnapshot = currentInputSnapshot;
+        }
+
+        private static void CheckForRigSnapshot()
+        {
+            if (inputState == InputState.None || inputState == InputState.SelectionOutsideOfInitiatedRoot) return;
+            if (gamepadButtonStates[GamepadButton.Select] == GamepadButtonPressedState.PressedThisFrame)
+            {
+                rigTree = new RigTree(selectionRoot.transform);
+                UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+            }
         }
 
         private static void InitSelectionRotate()
@@ -524,11 +539,11 @@ namespace Paerowgee.GamepadAnimator
             return true;
         }
 
-       
 
 
 
-        
+
+
 
         private static void CameraResetRotationAndAxes()
         {
@@ -537,7 +552,7 @@ namespace Paerowgee.GamepadAnimator
             cameraStartRotation = SceneView.lastActiveSceneView.camera.transform.rotation;
         }
 
-      
+
 
         private static bool CheckChangeSelectionCooldown()
         {
@@ -573,7 +588,7 @@ namespace Paerowgee.GamepadAnimator
             scene.LookAtBasedOnDistance(scene.pivot, cameraDistance, cameraRotation);
         }
 
-        
+
 
         private static void GetCameraLocalXZAxes(out Vector3 xAxis, out Vector3 zAxis)
         {
@@ -624,6 +639,25 @@ namespace Paerowgee.GamepadAnimator
             {
                 Gizmos.color = Color.red;
                 DrawGizmoInPseudoScreenSpace(transform.GetChild(0).position);
+            }
+
+            DrawRigTree();
+        }
+
+        private static void DrawRigTree()
+        {
+            if (rigTree == null) return;
+            Gizmos.color = Color.cyan;
+            DrawRigNode(rigTree);
+        }
+
+        private static void DrawRigNode(RigTree _node)
+        {
+            Gizmos.DrawSphere(_node.position, 0.025f);
+            foreach (var item in _node.children)
+            {
+                DrawRigNode(item);
+                Gizmos.DrawLine(_node.position, item.position);
             }
         }
 
