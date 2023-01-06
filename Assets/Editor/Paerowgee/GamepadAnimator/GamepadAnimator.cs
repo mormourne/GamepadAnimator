@@ -30,7 +30,7 @@ namespace Paerowgee.GamepadAnimator
         static GamepadInputSnapshot lastFrameInputSnapshot;
         static Dictionary<GamepadButton, GamepadButtonPressedState> gamepadButtonStates;
 
-        enum InputState //TODO either all possible combinations or multiple state enums for diff functions
+        enum InputState
         {
             None,
             RootInitiated,
@@ -53,14 +53,13 @@ namespace Paerowgee.GamepadAnimator
         static GameObject selectionRoot;
 
         const float rootMovementSpeed = 1f;
-
         const float cameraZoomSpeed = 3f;
-
         const float leftStickSqrMagnitudeDeadzone = 0.1f;
         const float rightStickSqrMagnitudeDeadzone = 0.1f;
-
         const double changeSelectionCooldown = 0.2f;
-        static double changeSelectionNextAvailability = 0f;
+        const float rewindingFastThreshold = 0.3f;
+
+        private static double changeSelectionNextAvailability = 0f;
 
         private static Vector3 selectionAxisForward;
         private static Vector3 selectionAxisUp;
@@ -69,12 +68,11 @@ namespace Paerowgee.GamepadAnimator
         private static Vector3 cameraAxisUp;
         private static Vector3 cameraAxisRight;
         private static Quaternion cameraStartRotation;
-        private static float cameraDistance;
+        private static float cameraSize;
         private static Quaternion cameraRotation;
 
         private static bool currentRewindForward = false;
         private static float rewindingPressTimer = 0f;
-        const float rewindingFastThreshold = 0.3f;
 
         private static Vector3 cameraTransitionStart;
         private static Transform cameraTransitionEnd;
@@ -385,7 +383,7 @@ namespace Paerowgee.GamepadAnimator
         {
 
             SceneView scene = SceneView.lastActiveSceneView;
-            cameraDistance = scene.cameraDistance;
+            cameraSize = scene.size;
             bool rightShoulder = gamepadButtonStates[GamepadButton.RightShoulder].Pressed();
             bool rightTrigger = gamepadButtonStates[GamepadButton.RightTrigger].Pressed();
 
@@ -395,9 +393,10 @@ namespace Paerowgee.GamepadAnimator
                 return;
             }
 
-            cameraDistance += cameraZoomSpeed * deltaTime * (rightShoulder ? 1f : -1f);
+            cameraSize += cameraZoomSpeed * deltaTime * (rightShoulder ? 1f : -1f);
 
         }
+
 
         private static void RotateCamera()
         {
@@ -408,6 +407,13 @@ namespace Paerowgee.GamepadAnimator
 
             cameraRotation = cameraStartRotation * Quaternion.AngleAxis(leftDegrees, cameraAxisUp) * Quaternion.AngleAxis(rightDegrees, cameraAxisRight);
             cameraRotation *= Quaternion.Euler(0f, 0f, -cameraRotation.eulerAngles.z);
+        }
+
+
+        private static void ApplyCameraRotation()
+        {
+            SceneView scene = SceneView.lastActiveSceneView;
+            scene.LookAtDirect(scene.pivot, cameraRotation, cameraSize);
         }
 
         private static void InitRewind(bool forward)
@@ -582,11 +588,7 @@ namespace Paerowgee.GamepadAnimator
 
         }
 
-        private static void ApplyCameraRotation()
-        {
-            SceneView scene = SceneView.lastActiveSceneView;
-            scene.LookAtBasedOnDistance(scene.pivot, cameraDistance, cameraRotation);
-        }
+
 
 
 

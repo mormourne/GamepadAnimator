@@ -67,63 +67,8 @@ Assembly-CSharp.csproj
 Packages/packages-lock.json
 Assets/LeanTween.meta
 
-/Assets/LeanTween/
 /BuildPC/
 /BuildAndroid/
-/Assets/FarlandSkies/
-/Assets/JMO Assets/
-/Assets/Skybox add-on/
-/Assets/_TerrainAutoUpgrade/
-/Assets/Winter Zone Mini 1.0/
-/Assets/GUI PRO Kit - Fantasy RPG/
-/Assets/Fantasy Interface Sounds/
-/Assets/Medieval Combat Sounds/
-/Assets/Ultimate Game Music Collection/
-/Assets/MagicArsenal/
-/Assets/Fantasy Sounds Bundle/
-/Assets/Dreamteck/
-/Assets/LowPolyCollectibles/
-/Assets/TrapsAndObstacles/
-/Assets/Allsky/
-/Assets/Stylized Texture Pack/
-/Assets/DownrainDC/
-/Assets/Traps-Obstacles/
-/Assets/iPoly3D/
-/Assets/Polygon Arsenal/
-/Assets/Female Mage Pack 01 Cute Series/
-/Assets/RPG Monster Wave Polyart/
-/Assets/Low_Poly_Plants_Flowers/
-/Assets/Epic Toon FX/
-/Assets/Color Studio/
-/Assets/Low Poly Ultimate Pack/
-/Assets/Environment Pack/
-/Assets/Number Themes/
-/Assets/RPGMonsterWave02Polyart/
-/Assets/UMotionEditor/
-/UMotionData/
-/Assets/Hyper Casual Characters/
-/Assets/Customizable Skybox/
-/Assets/PurePoly/
-/Assets/Lean/
-/Assets/LowPolyAssetBundle/
-/Assets/AdvancedPeopleSystem2/
-/Assets/GUI PRO Kit - Casual Game/
-/Assets/OpenFracture/
-/Recordings/
-/Assets/mighty_handful/
-/Assets/_Fog_Plane/
-/Assets/LowpolyHats/
-/Assets/CartoonLowPolyCity/
-/Assets/LowPolyWeapons/
-/Assets/BizulkaProduction/
-/Assets/LowPolyInterior/
-/Assets/PolygonCity/
-/Assets/Firebase/
-/Assets/Toon Vehicles/
-/Assets/tripolygon/
-/Assets/BOXOPHOBIC/
-/Assets/Vertical Fog Package by Tzar/
-/Assets/Plugins/Demigiant/
-/Assets/PolyFew/
 /Assets/Store/
-/Assets/Plugins/CW/
+/Assets/Scenes/Private
+
